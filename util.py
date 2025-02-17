@@ -108,7 +108,6 @@ def plot_union_membership(data, university):
 
     union_exists_mode = data["union_exists"].mode().iloc[0] if not data["union_exists"].mode().empty else None
     if union_exists_mode != "Yes":
-        st.warning(f"{university} does not have a graduate union.")
         return None
     else:
         total_weight = data["weight"].sum() if "weight" in data.columns else len(data)

@@ -64,6 +64,8 @@ with col_viz1:
     fig_union1 = util.plot_union_membership(df_uni1, uni1)
     if fig_union1:
         st.plotly_chart(fig_union1)
+    else:
+        st.warning(f"{uni1} does not have a graduate union.")
     fig_funding1 = util.plot_funding_breakdown(df_uni1, uni1)
     if fig_funding1:
         st.plotly_chart(fig_funding1)
@@ -76,6 +78,8 @@ with col_viz2:
     fig_union2 = util.plot_union_membership(df_uni2, uni2)
     if fig_union2:
         st.plotly_chart(fig_union2)
+    else:
+        st.warning(f"{uni2} does not have a graduate union.")
     fig_funding2 = util.plot_funding_breakdown(df_uni2, uni2)
     if fig_funding2:
         st.plotly_chart(fig_funding2)
