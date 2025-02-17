@@ -1,5 +1,5 @@
 import streamlit as st 
-from shillelagh.backends.apsw.db import connect
+#from shillelagh.backends.apsw.db import connect
 import pandas as pd
 import numpy as np
 import gspread
