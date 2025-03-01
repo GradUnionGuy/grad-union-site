@@ -61,31 +61,65 @@ col_viz1, col_viz2 = st.columns(2)
 
 with col_viz1:
     st.subheader(f"{uni1}")
-    fig_union1 = util.plot_union_membership(df_uni1, uni1)
-    if fig_union1:
-        st.plotly_chart(fig_union1)
+    # Check CBA status and display appropriate message
+    cba_status1 = util.get_cba_status(df_uni1, uni1)
+    if cba_status1 == "No CBA":
+        st.error(f"{uni1} does not have a graduate union.")
+    elif cba_status1 == "negotiating CBA":
+        st.warning(f"{uni1} does not have an active CBA; contract negotiations are in progress.")
+    
+    st.markdown("**University-Wide Union Membership**")
+    fig_union_uni1 = util.plot_union_membership_university(df_uni1, uni1)
+    if fig_union_uni1:
+         st.plotly_chart(fig_union_uni1)
     else:
-        st.warning(f"{uni1} does not have a graduate union.")
+         st.info(f"No union membership data available at the university level for {uni1}.")
+    
+    st.markdown("**Department-Specific Union Membership**")
+    fig_union_dept1 = util.plot_union_membership_department(df_uni1, uni1, selected_department)
+    if fig_union_dept1:
+         st.plotly_chart(fig_union_dept1)
+    else:
+         st.info(f"No union membership data available at the department level for {uni1} in {selected_department}.")
+    
     fig_funding1 = util.plot_funding_breakdown(df_uni1, uni1)
     if fig_funding1:
-        st.plotly_chart(fig_funding1)
+         st.plotly_chart(fig_funding1)
+    
     fig_job1 = util.plot_other_job_percentage(df_uni1, uni1)
     if fig_job1:
-        st.plotly_chart(fig_job1)
+         st.plotly_chart(fig_job1)
 
 with col_viz2:
     st.subheader(f"{uni2}")
-    fig_union2 = util.plot_union_membership(df_uni2, uni2)
-    if fig_union2:
-        st.plotly_chart(fig_union2)
+    # Check CBA status and display appropriate message
+    cba_status2 = util.get_cba_status(df_uni2, uni2)
+    if cba_status2 == "No CBA":
+        st.error(f"{uni2} does not have a graduate union.")
+    elif cba_status2 == "negotiating CBA":
+        st.warning(f"{uni2} does not have an active CBA; contract negotiations are in progress.")
+    
+    st.markdown("**University-Wide Union Membership**")
+    fig_union_uni2 = util.plot_union_membership_university(df_uni2, uni2)
+    if fig_union_uni2:
+         st.plotly_chart(fig_union_uni2)
     else:
-        st.warning(f"{uni2} does not have a graduate union.")
+         st.info(f"No union membership data available at the university level for {uni2}.")
+    
+    st.markdown("**Department-Specific Union Membership**")
+    fig_union_dept2 = util.plot_union_membership_department(df_uni2, uni2, selected_department)
+    if fig_union_dept2:
+         st.plotly_chart(fig_union_dept2)
+    else:
+         st.info(f"No union membership data available at the department level for {uni2} in {selected_department}.")
+    
     fig_funding2 = util.plot_funding_breakdown(df_uni2, uni2)
     if fig_funding2:
-        st.plotly_chart(fig_funding2)
+         st.plotly_chart(fig_funding2)
+    
     fig_job2 = util.plot_other_job_percentage(df_uni2, uni2)
     if fig_job2:
-        st.plotly_chart(fig_job2)
+         st.plotly_chart(fig_job2)
 
 # --- Step 5: Heatmap Comparison of Satisfaction Areas ---
 

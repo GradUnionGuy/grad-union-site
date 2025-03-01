@@ -7,6 +7,13 @@ from google.oauth2.service_account import Credentials
 import plotly.express as px
 import logging
 
+UNION_PRESENT_OPTIONS = {
+    "Yes, we have a union and an active contract/CBA",
+    "We have a union, but initial contract/CBA talks are ongoing",
+    "We have a union, but our CBA/contract is up for renewal"
+}
+
+
 
 def load_data():
     scope = [
@@ -37,7 +44,7 @@ def load_data():
         "What is your degree program?": "degree_program",
         "What will be your primary source of funding during your degree?": "funding_source",
         "Do you work another job while in graduate school?": "other_job",
-        "Does your university have a union for graduate students?": "union_exists",
+        "Does your university have a union and collective bargaining agreement (CBA) for graduate students?": "union_exists",
         "Are you a part of the grad student union at your university?": "union_member",
         "Is your university graduate union affiliated with any larger unions or organizations?  If so, which one?": "union_affiliation",
         "How active are you in your union?": "union_activity",
@@ -56,6 +63,9 @@ def load_data():
         "Please rank your satisfaction with the following elements of graduate student life at your university [Harassment/Discrimination Support]": "satisfaction_harassment",
         "Please rank your satisfaction with the following elements of graduate student life at your university [Professional Development]": "satisfaction_professional_dev",
         "If you are willing to validate your responses, please provide contact information in this question.": "contact_info",
+        "Please describe the state of CBA negotiations (if any) at your university": "cba_state",
+        "If you do have a CBA, what year was it initially established?": "cba_year",
+        
         "Validated": "validated"
     }
 
@@ -95,37 +105,106 @@ def filterDegreeDepartment(degrees, department, df):
     ]
     return filtered_df
 
-
-
-def plot_union_membership(data, university):
+def plot_union_membership_university(data, university):
     """
-    Plot union membership percentage if a union exists.
-    Assumes the columns 'union_exists' and 'union_member' are coded as "Yes"/"No".
+    Plot union membership percentage at the university level.
+    Only plots if the union exists based on the new union_exists options.
     """
-    # Determine if a union exists (using mode to get the most common response)
-    if "union_exists" not in data.columns:
+    # Filter data for the specified university.
+    uni_data = data[data["university"] == university]
+    if uni_data.empty or "union_exists" not in uni_data.columns:
         return None
 
-    union_exists_mode = data["union_exists"].mode().iloc[0] if not data["union_exists"].mode().empty else None
-    if union_exists_mode != "Yes":
+    # Determine the most common response regarding union existence.
+    union_exists_mode = uni_data["union_exists"].mode().iloc[0] if not uni_data["union_exists"].mode().empty else None
+
+    # If the mode response is not in our union-present options, return None.
+    if union_exists_mode not in UNION_PRESENT_OPTIONS:
         return None
+
+    # Compute total weight and weight for those who are union members.
+    total_weight = uni_data["weight"].sum() if "weight" in uni_data.columns else len(uni_data)
+    members_weight = (
+        uni_data.loc[uni_data["union_member"] == "Yes", "weight"].sum()
+        if "weight" in uni_data.columns else uni_data[uni_data["union_member"] == "Yes"].shape[0]
+    )
+
+    percentage = (members_weight / total_weight) * 100 if total_weight > 0 else 0
+
+    # Create the bar plot.
+    fig = px.bar(
+        x=["Union Membership"],
+        y=[percentage],
+        labels={"x": "", "y": "Percentage"},
+        title=f"Union Membership Percentage at {university}",
+        range_y=[0, 100]
+    )
+    return fig
+
+
+
+def plot_union_membership_department(data, university, department):
+    """
+    Plot union membership percentage for a specific department within a university.
+    """
+    # Filter data for the specified university and department.
+    dept_data = data[(data["university"] == university) & (data["department"] == department)]
+    if dept_data.empty or "union_exists" not in dept_data.columns:
+        return None
+
+    # Determine the mode of union existence responses for the department.
+    union_exists_mode = dept_data["union_exists"].mode().iloc[0] if not dept_data["union_exists"].mode().empty else None
+
+    # Only proceed if a union is present.
+    if union_exists_mode not in UNION_PRESENT_OPTIONS:
+        return None
+
+    # Compute the weighted union membership percentage.
+    total_weight = dept_data["weight"].sum() if "weight" in dept_data.columns else len(dept_data)
+    members_weight = (
+        dept_data.loc[dept_data["union_member"] == "Yes", "weight"].sum()
+        if "weight" in dept_data.columns else dept_data[dept_data["union_member"] == "Yes"].shape[0]
+    )
+
+    percentage = (members_weight / total_weight) * 100 if total_weight > 0 else 0
+
+    # Create the bar plot.
+    fig = px.bar(
+        x=["Union Membership"],
+        y=[percentage],
+        labels={"x": "", "y": "Percentage"},
+        title=f"Union Membership Percentage at {university} - {department}",
+        range_y=[0, 100]
+    )
+    return fig
+
+def get_cba_status(data, university):
+    """
+    Determine the CBA status for a university based on union_exists responses.
+    Returns one of: "active CBA", "negotiating CBA", or "No CBA".
+    """
+    # Filter data for the given university.
+    uni_data = data[data["university"] == university]
+    if uni_data.empty or "union_exists" not in uni_data.columns:
+        return None
+
+    # Determine the most common union_exists response.
+    union_status_mode = uni_data["union_exists"].mode().iloc[0] if not uni_data["union_exists"].mode().empty else None
+
+    if union_status_mode == "Yes, we have a union and an active contract/CBA":
+        return "active CBA"
+    elif union_status_mode in {
+        "We have a union, but initial contract/CBA talks are ongoing",
+        "We have a union, but our CBA/contract is up for renewal"
+    }:
+        return "negotiating CBA"
+    elif union_status_mode in {
+        "We do not have a union, but unionization efforts are ongoing/imminent",
+        "We do not have a union, and unionization efforts are not really happening"
+    }:
+        return "No CBA"
     else:
-        total_weight = data["weight"].sum() if "weight" in data.columns else len(data)
-        members_weight = (
-            data.loc[data["union_member"] == "Yes", "weight"].sum() 
-            if "weight" in data.columns 
-            else data[data["union_member"] == "Yes"].shape[0]
-        )
-        
-        percentage = (members_weight / total_weight) * 100 if total_weight > 0 else 0
-        fig = px.bar(
-            x=["Union Membership"],
-            y=[percentage],
-            labels={"x": "", "y": "Percentage"},
-            title=f"Union Membership Percentage at {university}",
-            range_y=[0, 100]
-        )
-        return fig
+        return None
     
 def plot_funding_breakdown(data, university):
     """
